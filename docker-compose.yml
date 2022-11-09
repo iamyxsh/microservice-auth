@@ -1,0 +1,122 @@
+services:
+  users-service:
+    container_name: users-service
+    build:
+      dockerfile: Dockerfile
+      context: ./users-service
+    volumes:
+      - ./users-service:/usr/src/app
+      - ./users-service/node_modules:/usr/src/app/node_modules
+    env_file:
+      - ./users-service/.env
+    ports:
+      - 3001:3001
+
+  users-service-db:
+    container_name: users-service-db
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./users-service-db:/var/lib/postgresql/data
+
+  auth-service:
+    container_name: auth-service
+    build:
+      dockerfile: Dockerfile
+      context: ./auth-service
+      target: development
+    volumes:
+      - ./auth-service:/usr/src/app
+    env_file:
+      - ./users-service/.env
+    ports:
+      - 3002:3002
+    networks:
+      - auth
+
+  auth-service-db:
+    container_name: auth-service-db
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./auth-service-db:/var/lib/postgresql/data
+    networks:
+      - auth
+
+  # stats-service:
+  #   container_name: stats-service
+  #   build:
+  #     dockerfile: Dockerfile
+  #     context: ./stats-service
+  #   volumes:
+  #     - ./stats-service:/app
+  #   ports:
+  #     - 3003:3003
+
+  stats-service-db:
+    container_name: stats-service-db
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5434:5432"
+    volumes:
+      - ./stats-service-db:/var/lib/postgresql/data
+
+  zookeeper:
+    container_name: zookeeper
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "22181:2181"
+      - "2888:2888"
+      - "3888:3888"
+
+  kafka:
+    container_name: kafka
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://host.docker.internal:9092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: true
+
+  test-db:
+    container_name: test-db
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5430:5432"
+    volumes:
+      - ./test-db:/var/lib/postgresql/data
+networks:
+  auth:
+    driver: bridge

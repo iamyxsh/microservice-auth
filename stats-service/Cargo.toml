@@ -1,0 +1,35 @@
+bench = []
+test = []
+example = []
+
+[[bin]]
+path = "src/main.rs"
+name = "stats-service"
+test = true
+doctest = true
+bench = true
+doc = true
+plugin = false
+proc-macro = false
+harness = true
+edition = "2021"
+required-features = []
+
+[package]
+name = "stats-service"
+edition = "2021"
+version = "0.0.1"
+autobins = true
+autoexamples = true
+autotests = true
+autobenches = true
+
+[dependencies]
+actix-web = "4.2.1"
+serde = "*"
+kafka = "0.9"
+
+
+[dependencies.sqlx]
+version = "0.6"
+features = ["runtime-actix-native-tls", "postgres", "time"]
